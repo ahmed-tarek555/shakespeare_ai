@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import get_batch, block_size
+from utils import get_batch, block_size, vocab_size, text, encode
 
 n_emb = 256
 n_heads = 5
@@ -10,7 +10,15 @@ dropout = 0.2
 
 with torch.no_grad():
     def get_loss(data, model):
-        model._train
+        model.eval()
+        sum = 0
+        len = 0
+        for i in range(100):
+            x, y = get_batch(data)
+            loss = model(x, y)
+            sum += loss.item()
+            len += 1
+        return sum/len
 
 
 
@@ -126,3 +134,13 @@ class LanguageModel(nn.Module):
             loss.backward()
 
             optim.step()
+        self.eval()
+
+if __name__ == '__main__':
+    data = torch.tensor(encode(text))
+    n = int(len(data) * 0.9)
+    val_data = data[n:]
+    model = LanguageModel(vocab_size)
+    model.load_state_dict(torch.load('model_weights.pth'))
+    val_loss = get_loss(val_data, model)
+    print(f'Validation loss is {val_loss}')
