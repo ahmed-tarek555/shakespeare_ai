@@ -1,11 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import get_batch, block_size, vocab_size, text, encode
+from utils import get_batch, block_size, vocab_size, text, encode, device
 
-n_emb = 256
-n_heads = 5
-head_size = 53
+n_emb = 384
+n_heads = 6
 dropout = 0.2
 
 with torch.no_grad():
@@ -19,7 +18,6 @@ with torch.no_grad():
             sum += loss.item()
             len += 1
         return sum/len
-
 
 
 class Head(nn.Module):
@@ -90,6 +88,9 @@ class LanguageModel(nn.Module):
                                     Block(n_emb, 4),
                                     Block(n_emb, 4),
                                     Block(n_emb, 4),
+                                    Block(n_emb, 4),
+                                    Block(n_emb, 4),
+                                    Block(n_emb, 4),
                                     nn.LayerNorm(n_emb),
                                     )
         self.lm_head = nn.Linear(n_emb, vocab_size)
@@ -97,7 +98,7 @@ class LanguageModel(nn.Module):
     def forward(self, x, y=None):
         B, T = x.shape
         token_emb = self.token_embedding_table(x)
-        pos_embedding = self.position_embedding_table(torch.arange(T))
+        pos_embedding = self.position_embedding_table(torch.arange(T, device=device))
         x = token_emb + pos_embedding
         x = self.blocks(x)
         logits = self.lm_head(x)
@@ -128,12 +129,15 @@ class LanguageModel(nn.Module):
         for i in range(n_iter):
             x, y = get_batch(data)
             loss = self(x, y)
-            print(loss.item())
+            if i% 100 == 0:
+                print(loss.item())
 
             optim.zero_grad()
             loss.backward()
 
             optim.step()
+            if i% (n_iter/100) == 0:
+                print(int(((i+1)/n_iter)*100))
         self.eval()
 
 if __name__ == '__main__':
@@ -141,6 +145,7 @@ if __name__ == '__main__':
     n = int(len(data) * 0.9)
     val_data = data[n:]
     model = LanguageModel(vocab_size)
+    model = model.to(device)
     model.load_state_dict(torch.load('model_weights.pth'))
     val_loss = get_loss(val_data, model)
     print(f'Validation loss is {val_loss}')
