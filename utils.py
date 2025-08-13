@@ -4,7 +4,7 @@ batch_size = 64
 block_size = 256
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-file = open('moviecorpus.txt', mode='r', encoding='utf-8')
+file = open('data.txt', mode='r', encoding='utf-8')
 text = file.read()
 vocab = sorted(list(set(text)))
 stoi = {ch: i for i, ch in enumerate(vocab)}
