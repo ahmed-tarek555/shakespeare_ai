@@ -144,8 +144,9 @@ if __name__ == '__main__':
     data = torch.tensor(encode(text))
     n = int(len(data) * 0.9)
     val_data = data[n:]
+    val_data = val_data.to(device)
     model = LanguageModel(vocab_size)
     model = model.to(device)
-    model.load_state_dict(torch.load('model_weights.pth'))
+    model.load_state_dict(torch.load('model_weights.pth', map_location=torch.device(device)))
     val_loss = get_loss(val_data, model)
     print(f'Validation loss is {val_loss}')
